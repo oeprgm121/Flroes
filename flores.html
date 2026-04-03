@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flores — Minecraft Client</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Raleway:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #050810;
+    --green: #39ff7a;
+    --teal: #00e5cc;
+    --rose: #ff4fa0;
+    --glow: rgba(57,255,122,0.18);
+    --gold: #ffe066;
+  }
+
+  html, body {
+    width: 100%; min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Raleway', sans-serif;
+    color: #e8f5e9;
+    overflow-x: hidden;
+  }
+
+  /* ── CANVAS PARTICLES ── */
+  #particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    opacity: 0.5;
+  }
+
+  /* ── RADIAL GLOW BG ── */
+  .bg-glow {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(0,229,204,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 50% at 80% 20%, rgba(57,255,122,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255,79,160,0.04) 0%, transparent 70%);
+  }
+
+  /* ── LAYOUT ── */
+  .page { position: relative; z-index: 2; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+
+  /* ── HEADER ── */
+  header {
+    width: 100%; padding: 28px 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid rgba(57,255,122,0.08);
+  }
+  .logo-text {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.15rem; font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.2em;
+    text-shadow: 0 0 18px var(--green);
+  }
+  nav a {
+    text-decoration: none; color: rgba(232,245,233,0.5);
+    font-size: 0.78rem; letter-spacing: 0.15em; text-transform: uppercase;
+    margin-left: 32px; transition: color 0.3s;
+  }
+  nav a:hover { color: var(--teal); }
+
+  /* ── HERO ── */
+  .hero {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 80px 20px 60px;
+    text-align: center;
+  }
+
+  /* Floating floral SVG ring */
+  .ring-wrap {
+    position: relative; width: 260px; height: 260px;
+    margin-bottom: 48px;
+    animation: floatY 4s ease-in-out infinite;
+  }
+  @keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+
+  .ring-svg { width: 260px; height: 260px; }
+  .ring-track { fill: none; stroke: rgba(57,255,122,0.12); stroke-width: 1.5; }
+  .ring-spin  { fill: none; stroke: var(--green); stroke-width: 1.5;
+                stroke-dasharray: 60 300; stroke-linecap: round;
+                animation: spinRing 3s linear infinite;
+                filter: drop-shadow(0 0 6px var(--green)); }
+  @keyframes spinRing { to{ stroke-dashoffset: -360; } }
+
+  .ring-spin2 { fill: none; stroke: var(--teal); stroke-width: 1;
+                stroke-dasharray: 30 200; stroke-linecap: round;
+                animation: spinRing2 5s linear infinite reverse;
+                filter: drop-shadow(0 0 4px var(--teal)); }
+  @keyframes spinRing2 { to{ stroke-dashoffset: -360; } }
+
+  /* Center icon */
+  .center-icon {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .center-icon svg { width: 80px; height: 80px; }
+
+  /* ── TITLE ── */
+  h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(3.2rem, 8vw, 6.5rem);
+    font-weight: 900; line-height: 1;
+    background: linear-gradient(135deg, #39ff7a 0%, #00e5cc 40%, #ffe066 80%, #ff4fa0 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 40px rgba(57,255,122,0.35));
+    margin-bottom: 16px;
+    animation: titleIn 1s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes titleIn { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:none} }
+
+  .subtitle {
+    font-size: 0.9rem; letter-spacing: 0.3em; text-transform: uppercase;
+    color: rgba(232,245,233,0.4); margin-bottom: 12px;
+    animation: titleIn 1s 0.15s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  .tagline {
+    font-size: clamp(0.95rem, 2vw, 1.1rem); font-weight: 300;
+    color: rgba(232,245,233,0.65); max-width: 520px; line-height: 1.7;
+    margin-bottom: 56px;
+    animation: titleIn 1s 0.3s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  /* ── BADGES ── */
+  .badges {
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    margin-bottom: 56px;
+    animation: titleIn 1s 0.4s cubic-bezier(.22,1,.36,1) both;
+  }
+  .badge {
+    padding: 6px 18px; border-radius: 100px;
+    border: 1px solid rgba(57,255,122,0.25);
+    font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(232,245,233,0.55);
+    background: rgba(57,255,122,0.04);
+  }
+  .badge.hot { border-color: rgba(255,79,160,0.4); color: var(--rose);
+               background: rgba(255,79,160,0.06); }
+  .badge.new { border-color: rgba(0,229,204,0.4); color: var(--teal);
+               background: rgba(0,229,204,0.06); }
+
+  /* ── DOWNLOAD BUTTON ── */
+  .btn-wrap {
+    animation: titleIn 1s 0.5s cubic-bezier(.22,1,.36,1) both;
+  }
+  .btn-dl {
+    position: relative; display: inline-flex; align-items: center; gap: 14px;
+    padding: 18px 52px; font-family: 'Cinzel Decorative', serif;
+    font-size: 1rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #39ff7a, #00e5cc);
+    color: #050810; border-radius: 4px;
+    box-shadow: 0 0 40px rgba(57,255,122,0.45), 0 4px 24px rgba(0,0,0,0.6);
+    transition: transform 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+  }
+  .btn-dl::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .btn-dl:hover { transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 0 60px rgba(57,255,122,0.6), 0 8px 32px rgba(0,0,0,0.6); }
+  .btn-dl:active { transform: translateY(0) scale(0.98); }
+  .btn-dl svg { width: 22px; height: 22px; flex-shrink: 0; }
+
+  /* ── FEATURES ── */
+  .features {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+    gap: 20px; width: 100%; max-width: 860px;
+    padding: 0 24px 80px;
+    animation: titleIn 1.2s 0.6s cubic-bezier(.22,1,.36,1) both;
+  }
+  .feat {
+    padding: 28px 24px; border-radius: 8px;
+    border: 1px solid rgba(57,255,122,0.1);
+    background: rgba(57,255,122,0.03);
+    position: relative; overflow: hidden;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .feat:hover {
+    border-color: rgba(57,255,122,0.3);
+    background: rgba(57,255,122,0.06);
+  }
+  .feat-icon { font-size: 1.8rem; margin-bottom: 14px; }
+  .feat h3 { font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase;
+             color: var(--green); margin-bottom: 8px; }
+  .feat p  { font-size: 0.82rem; color: rgba(232,245,233,0.45); line-height: 1.6; }
+
+  /* ── FOOTER ── */
+  footer {
+    width: 100%; padding: 24px 48px; text-align: center;
+    border-top: 1px solid rgba(57,255,122,0.06);
+    font-size: 0.72rem; letter-spacing: 0.1em;
+    color: rgba(232,245,233,0.2);
+  }
+
+  /* ══════════════════════════════════════
+     LOADER OVERLAY
+  ══════════════════════════════════════ */
+  #loader {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(5,8,16,0.96);
+    backdrop-filter: blur(12px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  #loader.active { opacity: 1; pointer-events: all; }
+
+  /* Orbital rings */
+  .loader-orbit-wrap {
+    position: relative; width: 200px; height: 200px; margin-bottom: 40px;
+  }
+  .orbit-ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid transparent;
+  }
+  .orbit-ring:nth-child(1) {
+    border-top-color: var(--green); border-right-color: rgba(57,255,122,0.2);
+    animation: orbitSpin 1.2s linear infinite;
+    box-shadow: inset 0 0 20px rgba(57,255,122,0.05);
+  }
+  .orbit-ring:nth-child(2) {
+    inset: 20px; border-top-color: var(--teal); border-left-color: rgba(0,229,204,0.2);
+    animation: orbitSpin 2s linear infinite reverse;
+  }
+  .orbit-ring:nth-child(3) {
+    inset: 40px; border-bottom-color: var(--rose); border-right-color: rgba(255,79,160,0.2);
+    animation: orbitSpin 0.8s linear infinite;
+  }
+  @keyframes orbitSpin { to { transform: rotate(360deg); } }
+
+  /* Spinning dots on rings */
+  .orbit-dot {
+    position: absolute; width: 8px; height: 8px;
+    border-radius: 50%; top: -4px; left: 50%; margin-left: -4px;
+    transform-origin: 4px 104px;
+  }
+  .orbit-dot:nth-child(4) { background: var(--green); box-shadow: 0 0 10px var(--green);
+    animation: orbitSpin 1.2s linear infinite; }
+  .orbit-dot:nth-child(5) { background: var(--teal); box-shadow: 0 0 10px var(--teal);
+    width:6px;height:6px;top:-3px;left:calc(50% - 3px);
+    transform-origin: 3px 83px;
+    animation: orbitSpin 2s linear infinite reverse; }
+  .orbit-dot:nth-child(6) { background: var(--rose); box-shadow: 0 0 10px var(--rose);
+    width:5px;height:5px;top:-3px;left:calc(50% - 2.5px);
+    transform-origin: 2.5px 62px;
+    animation: orbitSpin 0.8s linear infinite; }
+
+  /* Core pulse */
+  .orbit-core {
+    position: absolute; width: 60px; height: 60px;
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(57,255,122,0.3), transparent 70%);
+    animation: corePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes corePulse { 0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.7}
+    50%{transform:translate(-50%,-50%) scale(1.3);opacity:1} }
+
+  .orbit-logo {
+    position: absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    font-family:'Cinzel Decorative',serif; font-size:0.9rem;
+    color:var(--green); text-shadow:0 0 12px var(--green); letter-spacing:0.1em;
+  }
+
+  /* Progress bar */
+  .loader-progress-wrap {
+    width: 280px; height: 3px;
+    background: rgba(255,255,255,0.06); border-radius: 10px;
+    overflow: hidden; margin-bottom: 20px;
+  }
+  .loader-progress-bar {
+    height: 100%; width: 0%; border-radius: 10px;
+    background: linear-gradient(90deg, var(--green), var(--teal));
+    box-shadow: 0 0 10px var(--teal);
+    transition: width 0.1s linear;
+  }
+
+  /* Status text */
+  .loader-status {
+    font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(232,245,233,0.45);
+    min-height: 20px;
+  }
+  .loader-percent {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.4rem; color: var(--green);
+    text-shadow: 0 0 16px var(--green);
+    margin-bottom: 16px;
+  }
+
+  /* Particles burst */
+  .burst-particle {
+    position: absolute; width: 4px; height: 4px; border-radius: 50%;
+    animation: burstOut 1s ease-out forwards;
+    opacity: 0;
+  }
+  @keyframes burstOut {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Done state */
+  .loader-done {
+    display: none; flex-direction: column; align-items: center; gap: 20px;
+  }
+  .loader-done.visible { display: flex; animation: titleIn 0.5s ease both; }
+  .btn-go {
+    padding: 14px 40px; font-family: 'Cinzel Decorative', serif;
+    font-size: 0.95rem; font-weight: 700; letter-spacing: 0.1em;
+    background: linear-gradient(135deg, #39ff7a, #00e5cc);
+    color: #050810; border: none; border-radius: 4px;
+    cursor: pointer; text-decoration: none;
+    box-shadow: 0 0 30px rgba(57,255,122,0.5);
+    animation: btnPop 0.6s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes btnPop { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
+  .loader-done-text {
+    font-size: 0.8rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(232,245,233,0.4);
+  }
+  .checkmark { font-size: 2.5rem; animation: corePulse 1.5s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div class="bg-glow"></div>
+
+<!-- ── LOADER ── -->
+<div id="loader">
+  <div id="loader-anim">
+    <div class="loader-orbit-wrap" style="display:flex;align-items:center;justify-content:center;">
+      <div class="orbit-ring"></div>
+      <div class="orbit-ring"></div>
+      <div class="orbit-ring"></div>
+      <div class="orbit-dot"></div>
+      <div class="orbit-dot"></div>
+      <div class="orbit-dot"></div>
+      <div class="orbit-core"></div>
+      <div class="orbit-logo">F</div>
+    </div>
+    <div class="loader-percent" id="loaderPct">0%</div>
+    <div class="loader-progress-wrap">
+      <div class="loader-progress-bar" id="loaderBar"></div>
+    </div>
+    <div class="loader-status" id="loaderStatus">Инициализация...</div>
+  </div>
+  <div class="loader-done" id="loaderDone">
+    <div class="checkmark">✦</div>
+    <div class="loader-done-text">Файл готов к загрузке</div>
+    <a href="https://dropmefiles.com/f5pcV" target="_blank" class="btn-go">⬇ Скачать Flores</a>
+  </div>
+</div>
+
+<!-- ── PAGE ── -->
+<div class="page">
+  <header>
+    <div class="logo-text">✦ FLORES</div>
+    <nav>
+      <a href="#">Фичи</a>
+      <a href="#">Discord</a>
+      <a href="#">FAQ</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <!-- Floral ring -->
+    <div class="ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="130" cy="130" r="120" class="ring-track"/>
+        <circle cx="130" cy="130" r="100" class="ring-track"/>
+        <circle cx="130" cy="130" r="120" class="ring-spin" stroke-dashoffset="0"/>
+        <circle cx="130" cy="130" r="100" class="ring-spin2" stroke-dashoffset="0"/>
+        <!-- petal shapes -->
+        <g opacity="0.25" fill="none" stroke="#39ff7a" stroke-width="0.8">
+          <ellipse cx="130" cy="60" rx="12" ry="28" transform="rotate(0 130 130)"/>
+          <ellipse cx="130" cy="60" rx="12" ry="28" transform="rotate(45 130 130)"/>
+          <ellipse cx="130" cy="60" rx="12" ry="28" transform="rotate(90 130 130)"/>
+          <ellipse cx="130" cy="60" rx="12" ry="28" transform="rotate(135 130 130)"/>
+          <ellipse cx="130" cy="60" rx="12" ry="28" transform="rotate(180 130 130)"/>
+          <ellipse cx="130" cy="60" rx="12" ry="28" transform="rotate(225 130 130)"/>
+          <ellipse cx="130" cy="60" rx="12" ry="28" transform="rotate(270 130 130)"/>
+          <ellipse cx="130" cy="60" rx="12" ry="28" transform="rotate(315 130 130)"/>
+        </g>
+      </svg>
+      <div class="center-icon">
+        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Minecraft creeper-ish flower -->
+          <circle cx="40" cy="40" r="18" fill="rgba(57,255,122,0.12)" stroke="#39ff7a" stroke-width="1.5"/>
+          <circle cx="40" cy="40" r="8" fill="rgba(57,255,122,0.3)"/>
+          <circle cx="40" cy="40" r="4" fill="#39ff7a" style="filter:drop-shadow(0 0 8px #39ff7a)"/>
+          <!-- petals -->
+          <ellipse cx="40" cy="18" rx="5" ry="10" fill="rgba(0,229,204,0.5)" transform="rotate(0 40 40)"/>
+          <ellipse cx="40" cy="18" rx="5" ry="10" fill="rgba(57,255,122,0.4)" transform="rotate(60 40 40)"/>
+          <ellipse cx="40" cy="18" rx="5" ry="10" fill="rgba(255,224,102,0.4)" transform="rotate(120 40 40)"/>
+          <ellipse cx="40" cy="18" rx="5" ry="10" fill="rgba(0,229,204,0.5)" transform="rotate(180 40 40)"/>
+          <ellipse cx="40" cy="18" rx="5" ry="10" fill="rgba(57,255,122,0.4)" transform="rotate(240 40 40)"/>
+          <ellipse cx="40" cy="18" rx="5" ry="10" fill="rgba(255,79,160,0.4)" transform="rotate(300 40 40)"/>
+        </svg>
+      </div>
+    </div>
+
+    <p class="subtitle">Minecraft Client</p>
+    <h1>Flores</h1>
+    <p class="tagline">Элегантный чит-клиент для Minecraft. Лёгкий, быстрый, неуловимый — как лепесток на ветру.</p>
+
+    <div class="badges">
+      <span class="badge">1.8 – 1.20</span>
+      <span class="badge new">Bypass AC</span>
+      <span class="badge">Forge / Fabric</span>
+      <span class="badge hot">Free</span>
+      <span class="badge">ESP &amp; Aimbot</span>
+    </div>
+
+    <div class="btn-wrap">
+      <button class="btn-dl" onclick="startDownload()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v13M7 11l5 5 5-5"/><path d="M3 21h18"/>
+        </svg>
+        Скачать бесплатно
+      </button>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="feat">
+      <div class="feat-icon">🌸</div>
+      <h3>Killaura</h3>
+      <p>Мгновенная атака с настройкой радиуса, CPS и приоритета целей.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">👁️</div>
+      <h3>ESP & Tracers</h3>
+      <p>Видишь всех игроков, мобов и предметы сквозь стены.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🌿</div>
+      <h3>Anti-Cheat Bypass</h3>
+      <p>Продуманный обход популярных систем защиты.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">⚡</div>
+      <h3>Speed & Flight</h3>
+      <p>Скоростное передвижение и полёт с минимальными флагами.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🎯</div>
+      <h3>Scaffold</h3>
+      <p>Автоматическая расстановка блоков под ногами в BedWars.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🌺</div>
+      <h3>GUI Кликгуй</h3>
+      <p>Красивый ClickGUI с поиском и категориями для удобства.</p>
+    </div>
+  </section>
+
+  <footer>© 2024 Flores Client — For educational purposes only &nbsp;·&nbsp; Not affiliated with Mojang</footer>
+</div>
+
+<script>
+/* ── PARTICLES ── */
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let W, H, pts = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize(); window.addEventListener('resize', resize);
+
+function mkPt() {
+  return {
+    x: Math.random() * W, y: Math.random() * H,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: -Math.random() * 0.4 - 0.1,
+    r: Math.random() * 1.5 + 0.3,
+    a: Math.random(),
+    c: Math.random() > 0.5 ? '57,255,122' : Math.random() > 0.5 ? '0,229,204' : '255,224,102'
+  };
+}
+for (let i = 0; i < 90; i++) pts.push(mkPt());
+
+function loop() {
+  ctx.clearRect(0, 0, W, H);
+  pts.forEach((p, i) => {
+    p.x += p.vx; p.y += p.vy;
+    p.a -= 0.002;
+    if (p.a <= 0 || p.y < -10) pts[i] = mkPt();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${p.c},${p.a})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(loop);
+}
+loop();
+
+/* ── DOWNLOAD LOADER ── */
+const statusTexts = [
+  'Инициализация модулей...',
+  'Загрузка ядра...',
+  'Обход античита...',
+  'Шифрование данных...',
+  'Компиляция байткода...',
+  'Патч-инжект...',
+  'Верификация сборки...',
+  'Финальная проверка...',
+  'Готово!'
+];
+
+function startDownload() {
+  const loader = document.getElementById('loader');
+  const bar    = document.getElementById('loaderBar');
+  const pct    = document.getElementById('loaderPct');
+  const status = document.getElementById('loaderStatus');
+  const anim   = document.getElementById('loader-anim');
+  const done   = document.getElementById('loaderDone');
+
+  loader.classList.add('active');
+  anim.style.display = 'flex';
+  anim.style.flexDirection = 'column';
+  anim.style.alignItems = 'center';
+  done.classList.remove('visible');
+
+  let progress = 0;
+  const total = 5000; // ms
+  const interval = 40;
+  let elapsed = 0;
+
+  const timer = setInterval(() => {
+    elapsed += interval;
+    progress = Math.min(100, Math.round((elapsed / total) * 100));
+
+    // eased progress visual
+    const eased = Math.round(100 * (1 - Math.pow(1 - elapsed / total, 3)));
+    bar.style.width = Math.min(100, eased) + '%';
+    pct.textContent = Math.min(100, eased) + '%';
+
+    const idx = Math.floor((elapsed / total) * (statusTexts.length - 1));
+    status.textContent = statusTexts[Math.min(idx, statusTexts.length - 1)];
+
+    if (elapsed >= total) {
+      clearInterval(timer);
+      bar.style.width = '100%';
+      pct.textContent = '100%';
+      status.textContent = 'Готово!';
+
+      setTimeout(() => {
+        anim.style.display = 'none';
+        done.classList.add('visible');
+      }, 400);
+    }
+  }, interval);
+
+  loader.addEventListener('click', (e) => {
+    if (e.target === loader) {
+      // close only if done
+      if (done.classList.contains('visible')) {
+        loader.classList.remove('active');
+      }
+    }
+  }, { once: false });
+}
+</script>
+</body>
+</html>
